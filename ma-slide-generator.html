@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>M&amp;A 인수 사례 장표 생성기</title>
+<style>
+:root{
+  --accent:#E27041;
+  --tint:#E7E6E6;
+  --ink:#111418;
+  --muted:#6b7280;
+  --line:#e5e7eb;
+  --bg:#f4f5f7;
+  --panel:#ffffff;
+  --font-l :'프리젠테이션 3 Light','Freesentation 3 Light','Pretendard Light',Pretendard,'Malgun Gothic',sans-serif;
+  --font-m :'프리젠테이션 5 Medium','Freesentation 5 Medium','Pretendard Medium',Pretendard,'Malgun Gothic',sans-serif;
+  --font-sb:'프리젠테이션 6 SemiBold','Freesentation 6 SemiBold','Pretendard SemiBold',Pretendard,'Malgun Gothic',sans-serif;
+  --font-b :'프리젠테이션 7 Bold','Freesentation 7 Bold','Pretendard Bold',Pretendard,'Malgun Gothic',sans-serif;
+  --font-eb:'프리젠테이션 8 ExtraBold','Freesentation 8 ExtraBold','Pretendard ExtraBold',Pretendard,'Malgun Gothic',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--font-m);
+  font-size:14px;line-height:1.5;
+  display:grid;grid-template-columns:410px 1fr;height:100vh;overflow:hidden;
+}
+
+/* ---------- left control panel ---------- */
+#panel{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto}
+#panel::-webkit-scrollbar{width:10px}
+#panel::-webkit-scrollbar-thumb{background:#cfd4db;border-radius:5px;border:3px solid var(--panel)}
+#head{position:sticky;top:0;z-index:9;background:var(--panel);border-bottom:1px solid var(--line);padding:16px 18px 13px}
+#head h1{font-family:var(--font-eb);font-size:17px;margin:0 0 3px}
+#head .sub{color:var(--muted);font-size:12px}
+#head .rule{height:3px;border-radius:2px;background:var(--accent);margin-top:10px}
+
+.sec>h2{
+  margin:0;padding:11px 18px;font-family:var(--font-eb);font-size:12px;letter-spacing:-.2px;
+  background:#fafbfc;border-top:1px solid var(--line);border-bottom:1px solid #f0f1f3;
+  cursor:pointer;user-select:none;display:flex;align-items:center;gap:7px;color:#374151;
+}
+.sec>h2::before{content:'▾';font-size:9px;color:var(--accent);transition:transform .15s}
+.sec.closed>h2::before{transform:rotate(-90deg)}
+.sec.closed .bd{display:none}
+.sec .bd{padding:14px 18px 16px}
+
+label{display:block;font-family:var(--font-sb);font-size:11.5px;margin:0 0 5px;color:#4b5563}
+label .lite{font-family:var(--font-m);color:var(--muted)}
+.f{margin-bottom:12px}
+.f:last-child{margin-bottom:0}
+input[type=text],input[type=number],textarea,select{
+  width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;
+  font-family:inherit;font-size:12.5px;background:#fff;color:var(--ink);
+}
+textarea{resize:vertical;line-height:1.55;font-size:12px;min-height:64px}
+textarea.mono{font-family:ui-monospace,Consolas,monospace;font-size:11.5px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+button{
+  padding:8px 12px;border:0;border-radius:6px;background:var(--accent);color:#fff;
+  font-family:var(--font-b);font-size:12.5px;cursor:pointer;
+}
+button:hover:not(:disabled){filter:brightness(1.06)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.ghost{background:#fff;color:#374151;border:1px solid var(--line);font-family:var(--font-sb)}
+button.ghost:hover:not(:disabled){background:#fafbfc;border-color:#c8cdd5}
+button.sm{padding:6px 10px;font-size:11.5px}
+.brow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.brow.tight{margin-top:0}
+
+.hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.hint code{background:#f0f1f3;padding:1px 4px;border-radius:3px;font-size:10.5px;font-family:ui-monospace,Consolas,monospace}
+
+.sw{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.sw button{
+  background:#fff;border:1px solid var(--line);color:#4b5563;font-family:var(--font-sb);
+  font-size:11px;padding:5px 10px 5px 7px;border-radius:20px;display:flex;align-items:center;gap:6px;
+}
+.sw button i{width:11px;height:11px;border-radius:50%;display:block}
+.sw button.on{border-color:#111418;color:#111418}
+
+.art{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;background:#fafbfc;position:relative}
+.art .n{position:absolute;top:9px;right:10px;font-family:var(--font-b);font-size:10.5px;color:var(--accent)}
+.art .x{position:absolute;top:6px;right:8px;background:none;border:0;color:#9ca3af;font-size:15px;
+  line-height:1;padding:2px 5px;border-radius:4px;cursor:pointer}
+.art .x:hover{background:#fee2e2;color:#b91c1c}
+.art label{margin-top:8px}
+.art label:first-of-type{margin-top:0}
+
+/* ---------- right stage ---------- */
+#stage{overflow:auto;padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px}
+#toolbar{display:flex;gap:8px;align-items:center;width:1066.64px;max-width:100%}
+#toolbar .spacer{flex:1}
+#toolbar .status{font-size:12px;color:var(--muted)}
+#toolbar .status.bad{color:#b45309;font-family:var(--font-sb)}
+#toolbar .status.good{color:#15803d}
+
+/* ---------- the slide (13.3333 x 7.5 in @ 80px/in) ---------- */
+#slideWrap{width:1066.64px;height:600px;flex:none;box-shadow:0 4px 24px rgba(0,0,0,.13);
+  background:#fff;position:relative;transform-origin:top center}
+#slide{position:absolute;inset:0;overflow:hidden;background:#fff}
+#slide .abs{position:absolute}
+#slide .bar{background:var(--accent)}
+#slide .hdr{color:#fff;font-family:var(--font-m);font-size:10pt;letter-spacing:-0.7pt;
+  white-space:nowrap;display:flex;align-items:center}
+#slide .dot{background:var(--accent);border-radius:2.5px}
+#slide .ttl{font-family:var(--font-eb);font-size:24pt;letter-spacing:-0.7pt;white-space:nowrap}
+#slide .sub2{font-family:var(--font-b);font-size:18pt;letter-spacing:-0.7pt;white-space:nowrap;
+  display:flex;align-items:flex-end}
+#slide .aside{font-family:var(--font-sb);font-size:10pt;letter-spacing:-0.7pt;color:var(--accent);
+  line-height:1.35;text-align:right}
+#slide .head{font-family:var(--font-eb);font-size:24pt;letter-spacing:-0.7pt;line-height:1.18}
+#slide .shead{font-family:var(--font-b);font-size:18pt;color:var(--accent);letter-spacing:-0.7pt;line-height:1.22}
+#slide .sec{font-family:var(--font-eb);font-size:14pt;letter-spacing:-0.7pt;white-space:nowrap}
+#slide .sec i{color:var(--accent);font-style:normal;margin-right:5px}
+
+#slide table{width:100%;border-collapse:collapse;table-layout:fixed}
+#slide td{font-family:var(--font-sb);letter-spacing:-0.7pt;line-height:1.32;
+  padding:4px 8px;vertical-align:middle;border:0}
+#slide td.k{background:#000;color:#fff;text-align:center}
+#slide td.v{background:#F2F2F2;color:#000}
+
+#slide .box{padding:11px 14px;overflow:hidden}
+#slide .box ul{margin:0;padding-left:15px}
+#slide .box li{font-family:var(--font-sb);letter-spacing:-0.7pt;line-height:1.32;margin-bottom:6px}
+#slide .box li:last-child{margin-bottom:0}
+#slide .box li::marker{color:var(--accent)}
+
+#slide .notes{font-family:var(--font-l);font-size:10pt;color:#595959;line-height:1.42;letter-spacing:-0.7pt}
+#slide .notes .lbl{font-family:var(--font-sb);color:var(--accent)}
+#slide .notes .no{font-family:var(--font-b);color:var(--accent)}
+#slide .rule{background:#D9D9D9}
+#slide sup{font-size:.60em;color:var(--accent);font-family:var(--font-b);vertical-align:super}
+
+#msg{width:1066.64px;max-width:100%;font-size:12px;background:#fff;border:1px solid var(--line);
+  border-radius:8px;padding:13px 16px;display:none}
+#msg h3{font-family:var(--font-b);font-size:12.5px;margin:0 0 8px}
+#msg ol{margin:0;padding-left:18px}
+#msg li{margin-bottom:4px;line-height:1.5}
+#msg a{color:#0563C1;word-break:break-all}
+#msg .bad{color:#b45309;font-family:var(--font-sb)}
+#msg .warnbox{margin-top:10px;padding-top:9px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <div id="head">
+    <h1>M&amp;A 인수 사례 장표 생성기</h1>
+    <div class="sub">기사 링크 3~5개 + 내용 입력 → 1장 장표 → PPTX</div>
+    <div class="rule"></div>
+  </div>
+
+  <!-- 1. 기사 링크 -->
+  <div class="sec" data-k="src">
+    <h2>1. 기사 링크 (3~5개)</h2>
+    <div class="bd">
+      <div class="f">
+        <label>링크 일괄 붙여넣기 <span class="lite">— 한 줄에 하나씩</span></label>
+        <textarea id="bulk" class="mono" rows="4" placeholder="https://www.adage.com/article/agency-news/...
+https://www.campaignlive.com/article/...
+https://www.thedrum.com/news/2026/08/20/..."></textarea>
+        <div class="brow">
+          <button class="ghost sm" id="bulkAdd">링크 읽어들이기</button>
+          <button class="ghost sm" id="bulkClear">입력창 비우기</button>
+        </div>
+        <div class="hint">URL을 넣으면 <b>매체명·게재일</b>을 도메인과 경로에서 자동 추정합니다. 제목은 직접 입력하세요.</div>
+      </div>
+      <div id="arts"></div>
+      <div class="brow tight"><button class="ghost sm" id="addArt">+ 기사 추가</button></div>
+      <div class="f" style="margin-top:14px">
+        <label>관련 기사 찾기 <span class="lite">— 인수사·피인수사로 검색</span></label>
+        <div class="brow tight">
+          <button class="ghost sm" id="gNews">Google News</button>
+          <button class="ghost sm" id="gWeb">Google 뉴스검색</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 기본 정보 -->
+  <div class="sec" data-k="base">
+    <h2>2. 기본 정보 · 컬러</h2>
+    <div class="bd">
+      <div class="f">
+        <label>액센트 컬러 <span class="lite">— 원본 덱 검증값</span></label>
+        <div class="sw" id="sw"></div>
+        <div class="g3">
+          <input type="text" id="accent" maxlength="6" placeholder="E27041" title="액센트">
+          <input type="text" id="tint" maxlength="6" placeholder="E7E6E6" title="박스 연한색">
+          <select id="font">
+            <option value="presentation">프리젠테이션 폰트</option>
+            <option value="pretendard">Pretendard</option>
+          </select>
+        </div>
+        <div class="hint">왼쪽=액센트, 가운데=박스 연한색, 오른쪽=출력 폰트. 이 PC엔 Freesentation(프리젠테이션 1~9)이 설치돼 있습니다.</div>
+      </div>
+      <div class="g2 f">
+        <div><label>좌측 머리말</label><input type="text" id="headerLeft"></div>
+        <div><label>우측 머리말</label><input type="text" id="headerRight"></div>
+      </div>
+      <div class="g2 f">
+        <div><label>인수사</label><input type="text" id="acquirer"></div>
+        <div><label>피인수사</label><input type="text" id="target"></div>
+      </div>
+      <div class="f">
+        <label>우상단 보조 설명 <span class="lite">— 10pt 액센트, 줄바꿈 가능</span></label>
+        <textarea id="aside" rows="2" placeholder="'24.12月 IPG 인수 발표 이후 진행된 첫 번째 인수"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 헤드라인 -->
+  <div class="sec" data-k="head">
+    <h2>3. 헤드라인</h2>
+    <div class="bd">
+      <div class="f">
+        <label>헤드라인 <span class="lite">— 24pt ExtraBold, 45자 내외 한 줄</span></label>
+        <textarea id="headlineKo" rows="2"></textarea>
+      </div>
+      <div class="f">
+        <label>서브 헤드라인 <span class="lite">— 18pt Bold, 액센트 컬러</span></label>
+        <textarea id="subheadKo" rows="2"></textarea>
+      </div>
+      <div class="hint">문장 끝에 <code>[1]</code> <code>[2,3]</code>를 쓰면 기사 번호가 위첨자 각주로 붙습니다.</div>
+    </div>
+  </div>
+
+  <!-- 4. 좌상 -->
+  <div class="sec" data-k="q1">
+    <h2>4. 좌상 — 피인수사 개요</h2>
+    <div class="bd">
+      <div class="f"><label>섹션 제목</label><input type="text" id="secL1"></div>
+      <div class="f">
+        <label>항목 <span class="lite">— 한 줄에 <code>라벨 | 값</code></span></label>
+        <textarea id="profile" rows="7" placeholder="소재지 | 호주 시드니
+임직원 | 20명
+설립연도 | 1997년"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 우상 -->
+  <div class="sec" data-k="q2">
+    <h2>5. 우상 — 인수 배경 / 역량</h2>
+    <div class="bd">
+      <div class="f"><label>섹션 제목</label><input type="text" id="secR1"></div>
+      <div class="f">
+        <label>항목 <span class="lite">— 한 줄에 <code>라벨 | 값</code></span></label>
+        <textarea id="capabilities" rows="7" placeholder="배경 | 생활비 부담으로 리워드 카드 가치에 의문 [1]
+목표 | 포인트 사용 활성화로 로열티 회복 [2]"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 좌하 -->
+  <div class="sec" data-k="q3">
+    <h2>6. 좌하 — 딜 개요</h2>
+    <div class="bd">
+      <div class="f"><label>섹션 제목</label><input type="text" id="secL2"></div>
+      <div class="f">
+        <label>항목 <span class="lite">— 한 줄에 <code>라벨 | 값</code></span></label>
+        <textarea id="deal" rows="6" placeholder="인수 시점 | '26.6月 [1]
+인수 대가 | 미공개
+편입 조직 | Omnicom Oceania [1]"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. 우하 -->
+  <div class="sec" data-k="q4">
+    <h2>7. 우하 — 시사점</h2>
+    <div class="bd">
+      <div class="f"><label>섹션 제목</label><input type="text" id="secR2"></div>
+      <div class="f">
+        <label>불릿 <span class="lite">— 한 줄에 하나</span></label>
+        <textarea id="insights" rows="5"></textarea>
+      </div>
+      <div class="f">
+        <label>확인되지 않은 항목 <span class="lite">— 화면 아래 메모, 장표에는 안 나감</span></label>
+        <input type="text" id="unknowns" placeholder="인수 대가 / 지분율">
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. 출력 -->
+  <div class="sec" data-k="out">
+    <h2>8. 출력</h2>
+    <div class="bd">
+      <div class="f"><label>파일명 <span class="lite">— 비우면 자동</span></label><input type="text" id="fname"></div>
+      <div class="brow tight">
+        <button class="ghost sm" id="expJson">설정 저장(JSON)</button>
+        <button class="ghost sm" id="impJson">설정 불러오기</button>
+        <button class="ghost sm" id="sample">예시 채우기</button>
+        <button class="ghost sm" id="reset">전체 초기화</button>
+      </div>
+      <input type="file" id="fileJson" accept=".json,application/json" style="display:none">
+      <div class="hint">입력값은 이 브라우저에 자동 저장됩니다. 다른 PC로 옮길 땐 설정 저장을 쓰세요.
+      인터넷·API·계정 없이 전부 로컬에서 동작합니다.</div>
+    </div>
+  </div>
+</div>
+
+<div id="stage">
+  <div id="toolbar">
+    <button id="dl">PPTX 다운로드</button>
+    <div class="spacer"></div>
+    <div class="status" id="status">대기 중</div>
+    <label style="margin:0;display:flex;align-items:center;gap:6px;font-family:var(--font-m);
+      font-size:11.5px;color:var(--muted)">
+      배율 <input type="range" id="zoom" min="45" max="115" value="100" style="width:88px;padding:0">
+    </label>
+  </div>
+
+  <div id="slideWrap"><div id="slide"></div></div>
+
+  <div id="msg"></div>
+</div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   0. 스타일 상수
+      기준이 되는 M&A 동향 덱을 전수 스캔해 얻은 실측값. 단위는 인치.
+        · 캔버스 13.3333 x 7.5
+        · 상단 액센트바 0,0.079 / 13.333 x 0.315
+        · 페이지 도트 10.434 + i*0.1667, 0.308, 0.079 x 0.315 (8개 모두 채움)
+        · 좌여백 0.67, 우열 시작 6.21, 우끝 12.67
+        · 표 라벨셀 #000 + 흰 글씨 가운데, 값셀 #F2F2F2, 테두리 없음, 12pt SemiBold
+        · 전 텍스트 자간 spc = -70 (-0.7pt)
+   ===================================================================== */
+const SLIDE_W = 13.3333, SLIDE_H = 7.5;
+const PX  = 80;                    // 미리보기 배율 (px per inch)
+const EMU = i => Math.round(i * 914400);
+const SPC = -70;                   // 전 텍스트 공통 자간
+
+const FONTS = {
+  presentation:{ l:"프리젠테이션 3 Light", m:"프리젠테이션 5 Medium",
+                 sb:"프리젠테이션 6 SemiBold", b:"프리젠테이션 7 Bold", eb:"프리젠테이션 8 ExtraBold" },
+  pretendard  :{ l:"Pretendard Light", m:"Pretendard Medium",
+                 sb:"Pretendard SemiBold", b:"Pretendard", eb:"Pretendard ExtraBold" }
+};
+
+// 그룹별 액센트 — 원본 덱에서 실제 사용된 값
+const PALETTE = [
+  {name:"Omnicom",        accent:"E27041", tint:"E7E6E6"},
+  {name:"Accenture Song", accent:"9728F5", tint:"E8CFFD"},
+  {name:"Publicis",       accent:"85743A", tint:"E7DFC7"},
+  {name:"Hakuhodo",       accent:"3333FF", tint:"E7E6E6"}
+];
+
+// 고정 좌표 (세로 흐름은 내용 길이에 따라 계산)
+const L = {
+  bar   : {x:0,     y:0.079, w:SLIDE_W, h:0.315},
+  hdrL  : {x:0.28,  y:0.10,  w:5.20, h:0.27},
+  hdrR  : {x:6.30,  y:0.10,  w:3.80, h:0.27},
+  dots  : {x:10.434,y:0.308, w:0.079,h:0.315, step:0.1667, n:8},
+  ttl   : {x:0.67,  y:0.39,  w:2.10, h:0.50},
+  sub2  : {x:2.35,  y:0.49,  w:5.60, h:0.40},
+  aside : {x:8.10,  y:0.60,  w:4.57, h:0.50},
+  head  : {x:0.67,  y:1.15,  w:11.90,h:0.52},
+  shead : {x:0.67,  y:1.62,  w:11.90,h:0.42},
+  colL  : {x:0.67,  w:5.35, cw:[1.42, 3.93]},
+  colR  : {x:6.21,  w:6.46, cw:[1.55, 4.91]},
+  rowTop: 2.07,                    // 첫 섹션 라벨 y
+  secH  : 0.34,                    // 섹션 라벨 높이
+  gapSec: 0.33,                    // 섹션 라벨 → 콘텐츠
+  gapBlk: 0.24,                    // 콘텐츠 → 다음 섹션 라벨
+  notesY: 6.72, notesX:0.67, notesW:12.00, notesH:0.66
+};
+
+let ACCENT = "E27041";
+let TINT   = "E7E6E6";
+let FONT   = "presentation";
+
+/* =====================================================================
+   1. ZIP writer (store, 무압축) — PPTX 생성용
+   ===================================================================== */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+/** files: [{name, data:Uint8Array}] -> Blob (ZIP, store 방식) */
+function makeZip(files) {
+  const enc = new TextEncoder();
+  const chunks = [], central = [];
+  let offset = 0;
+
+  const u16 = v => [v & 0xFF, (v >>> 8) & 0xFF];
+  const u32 = v => [v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF];
+
+  for (const f of files) {
+    const nameBytes = enc.encode(f.name);
+    const crc = crc32(f.data);
+    const size = f.data.length;
+
+    const lfh = [].concat(
+      u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(0), u16(0),
+      u32(crc), u32(size), u32(size), u16(nameBytes.length), u16(0)
+    );
+    chunks.push(new Uint8Array(lfh), nameBytes, f.data);
+
+    central.push([].concat(
+      u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0),
+      u32(crc), u32(size), u32(size), u16(nameBytes.length),
+      u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset)
+    ), nameBytes);
+
+    offset += lfh.length + nameBytes.length + size;
+  }
+
+  const cdStart = offset;
+  let cdSize = 0;
+  const cdChunks = [];
+  for (const c of central) {
+    const arr = c instanceof Uint8Array ? c : new Uint8Array(c);
+    cdChunks.push(arr);
+    cdSize += arr.length;
+  }
+  const eocd = new Uint8Array([].concat(
+    u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length),
+    u32(cdSize), u32(cdStart), u16(0)
+  ));
+
+  return new Blob([...chunks, ...cdChunks, eocd],
+                  {type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+}
+
+/* =====================================================================
+   2. OOXML 조각 생성기
+   ===================================================================== */
+const X = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;").replace(/'/g,"&apos;");
+
+let _id = 100;
+const nextId = () => ++_id;
+
+// 슬라이드가 참조하는 하이퍼링크(출처). buildSlideXml 이 채우고 slideRels() 가 읽는다.
+let _links = [];
+function linkId(url) { _links.push(url); return "rIdL" + _links.length; }
+
+/** `[3]` 같은 각주 마커를 위첨자 액센트 run 으로 분리 */
+function runsFor(text, style, F) {
+  const out = [];
+  const parts = String(text == null ? "" : text).split(/(\[\d+(?:,\s*\d+)*\])/g);
+  for (const p of parts) {
+    if (!p) continue;
+    if (/^\[\d+(?:,\s*\d+)*\]$/.test(p)) {
+      out.push(runXml(p, Object.assign({}, style,
+        {sz: Math.round(style.sz*0.60), color: ACCENT, baseline: 30000, font: F.b})));
+    } else {
+      out.push(runXml(p, style));
+    }
+  }
+  return out.join("");
+}
+
+function runXml(text, s) {
+  let a = 'lang="ko-KR" altLang="en-US"';
+  if (s.sz) a += ' sz="' + Math.round(s.sz) + '"';
+  if (s.b)  a += ' b="1"';
+  if (s.i)  a += ' i="1"';
+  a += ' spc="' + (s.spc == null ? SPC : s.spc) + '"';
+  if (s.baseline) a += ' baseline="' + s.baseline + '"';
+  a += ' dirty="0"';
+
+  const fill = s.color ? '<a:solidFill><a:srgbClr val="' + s.color + '"/></a:solidFill>' : "";
+  const font = s.font
+    ? '<a:latin typeface="' + X(s.font) + '" pitchFamily="2" charset="-127"/>' +
+      '<a:ea typeface="'    + X(s.font) + '" pitchFamily="2" charset="-127"/>' +
+      '<a:cs typeface="'    + X(s.font) + '"/>'
+    : "";
+  const link = s.link
+    ? '<a:hlinkClick xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="'
+      + s.link + '"/>'
+    : "";
+
+  return '<a:r><a:rPr ' + a + '>' + fill + font + link + '</a:rPr><a:t>' + X(text) + '</a:t></a:r>';
+}
+
+/** 텍스트 상자 */
+function spText(g, paragraphs, opt) {
+  opt = opt || {};
+  const id = nextId();
+  const anchor = opt.anchor || "t";
+  const wrap   = opt.wrap === false ? 'wrap="none"' : 'wrap="square"';
+  const align  = opt.align ? '<a:pPr algn="' + opt.align + '"/>' : "";
+  const body = paragraphs.map(p => '<a:p>' + align + (p || "") + '</a:p>').join("");
+
+  return '<p:sp><p:nvSpPr><p:cNvPr id="' + id + '" name="TB' + id + '"/>' +
+    '<p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>' +
+    '<p:spPr><a:xfrm><a:off x="' + EMU(g.x) + '" y="' + EMU(g.y) + '"/>' +
+    '<a:ext cx="' + EMU(g.w) + '" cy="' + EMU(g.h) + '"/></a:xfrm>' +
+    '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>' +
+    '<p:txBody><a:bodyPr ' + wrap + ' lIns="0" tIns="0" rIns="0" bIns="0" ' +
+    'anchor="' + anchor + '" rtlCol="0"><a:noAutofit/></a:bodyPr><a:lstStyle/>' +
+    body + '</p:txBody></p:sp>';
+}
+
+/** 단색 사각형 */
+function spRect(g, fill, round) {
+  const id = nextId();
+  const geom = round ? "roundRect" : "rect";
+  const av   = round ? '<a:avLst><a:gd name="adj" fmla="val 20000"/></a:avLst>' : '<a:avLst/>';
+  return '<p:sp><p:nvSpPr><p:cNvPr id="' + id + '" name="R' + id + '"/>' +
+    '<p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr>' +
+    '<a:xfrm><a:off x="' + EMU(g.x) + '" y="' + EMU(g.y) + '"/>' +
+    '<a:ext cx="' + EMU(g.w) + '" cy="' + EMU(g.h) + '"/></a:xfrm>' +
+    '<a:prstGeom prst="' + geom + '">' + av + '</a:prstGeom>' +
+    (fill ? '<a:solidFill><a:srgbClr val="' + fill + '"/></a:solidFill>' : '<a:noFill/>') +
+    '<a:ln><a:noFill/></a:ln>' +
+    '</p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody></p:sp>';
+}
+
+/**
+ * 그라데이션 사각형 — 원본 덱 인용 박스와 동일한 정의.
+ * 흰색에 가까운 색(accent 5%) → 연한 틴트, 각도 16200000 (270°).
+ */
+function spRectGrad(g, tint) {
+  const id = nextId();
+  return '<p:sp><p:nvSpPr><p:cNvPr id="' + id + '" name="G' + id + '"/>' +
+    '<p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr>' +
+    '<a:xfrm><a:off x="' + EMU(g.x) + '" y="' + EMU(g.y) + '"/>' +
+    '<a:ext cx="' + EMU(g.w) + '" cy="' + EMU(g.h) + '"/></a:xfrm>' +
+    '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>' +
+    '<a:gradFill flip="none" rotWithShape="1"><a:gsLst>' +
+    '<a:gs pos="0"><a:schemeClr val="accent1"><a:lumMod val="5000"/><a:lumOff val="95000"/></a:schemeClr></a:gs>' +
+    '<a:gs pos="85000"><a:srgbClr val="' + tint + '"/></a:gs>' +
+    '<a:gs pos="100000"><a:srgbClr val="' + tint + '"/></a:gs>' +
+    '</a:gsLst><a:lin ang="16200000" scaled="1"/><a:tileRect/></a:gradFill>' +
+    '<a:ln><a:noFill/></a:ln>' +
+    '</p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody></p:sp>';
+}
+
+/**
+ * 2열 표 — 원본 덱 스타일.
+ *   라벨셀 : 검정 배경 + 흰 글씨 + 가운데 정렬
+ *   값셀   : #F2F2F2 배경 + 검정 글씨 + 왼쪽 정렬
+ *   테두리 : 없음 / 세로 정렬 : 가운데
+ */
+function tblFrame(g, colW, rows, F) {
+  const id = nextId();
+  const grid = colW.map(w => '<a:gridCol w="' + EMU(w) + '"/>').join("");
+  const noLn = ["L","R","T","B"].map(d =>
+    '<a:ln' + d + ' w="12700" cmpd="sng"><a:noFill/></a:ln' + d + '>').join("");
+
+  const cell = (text, isKey) => {
+    const st = {sz: TBL_PT*100, font: F.sb, color: isKey ? "FFFFFF" : null};
+    const pPr = isKey ? '<a:pPr algn="ctr" latinLnBrk="1"/>' : '<a:pPr latinLnBrk="1"/>';
+    return '<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p>' + pPr + runsFor(text, st, F) +
+      '</a:p></a:txBody>' +
+      '<a:tcPr marL="91440" marR="91440" marT="45720" marB="45720" anchor="ctr">' + noLn +
+      '<a:solidFill><a:srgbClr val="' + (isKey ? "000000" : "F2F2F2") + '"/></a:solidFill>' +
+      '</a:tcPr></a:tc>';
+  };
+
+  const trs = rows.map(r =>
+    '<a:tr h="' + EMU(rowHeight(r, colW)) + '">' + cell(r[0], true) + cell(r[1], false) + '</a:tr>'
+  ).join("");
+
+  return '<p:graphicFrame><p:nvGraphicFramePr>' +
+    '<p:cNvPr id="' + id + '" name="TBL' + id + '"/>' +
+    '<p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/>' +
+    '</p:nvGraphicFramePr>' +
+    '<p:xfrm><a:off x="' + EMU(g.x) + '" y="' + EMU(g.y) + '"/>' +
+    '<a:ext cx="' + EMU(g.w) + '" cy="' + EMU(tableHeight(rows, colW)) + '"/></p:xfrm>' +
+    '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">' +
+    '<a:tbl><a:tblPr firstRow="0" bandRow="0">' +
+    '<a:tableStyleId>{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}</a:tableStyleId>' +
+    '</a:tblPr><a:tblGrid>' + grid + '</a:tblGrid>' +
+    trs + '</a:tbl></a:graphicData></a:graphic></p:graphicFrame>';
+}
+
+/* ---------- 높이 추정 (미리보기와 PPTX가 같은 값을 쓴다) ---------- */
+
+/** 문자열의 시각적 폭(em). 한글·CJK 1em, 영문 대문자 0.62, 그 외 0.52 */
+function widthEm(s) {
+  let w = 0;
+  for (const ch of String(s)) {
+    if (/[ᄀ-ᇿ㄰-㆏가-힣　-〿＀-￯一-鿿]/.test(ch)) w += 1;
+    else if (ch === " ") w += 0.30;
+    else if (/[A-Z]/.test(ch)) w += 0.62;
+    else if (/[ilj.,'!|()\[\]]/.test(ch)) w += 0.30;
+    else w += 0.52;
+  }
+  return w;
+}
+
+let TBL_PT = 12;                       // 표 본문 pt (넘치면 자동으로 11 → 10)
+const CELL_PAD_W = 0.20;               // 좌우 셀 여백 합 (marL + marR)
+const lineIn = pt => pt * 1.32 / 72;   // 한 줄 높이(인치)
+
+function lineCount(text, wIn, pt) {
+  const avail = Math.max(3, (wIn - CELL_PAD_W) * 72 / pt);
+  const clean = String(text == null ? "" : text).replace(/\[\d+(?:,\s*\d+)*\]/g, "");
+  let n = 0;
+  for (const para of clean.split("\n")) n += Math.max(1, Math.ceil(widthEm(para) / avail));
+  return Math.max(1, n);
+}
+function rowHeight(r, colW) {
+  const n = Math.max(lineCount(r[1], colW[1], TBL_PT), lineCount(r[0], colW[0], TBL_PT));
+  return Math.max(0.36, 0.10 + n * lineIn(TBL_PT));
+}
+function tableHeight(rows, colW) {
+  return rows.reduce((s, r) => s + rowHeight(r, colW), 0);
+}
+function bulletsHeight(list, wIn) {
+  let h = 0.24;                                         // 박스 상하 여백
+  for (const t of list) h += lineCount(t, wIn - 0.42, TBL_PT) * lineIn(TBL_PT) + 0.075;
+  return Math.max(0.70, h);
+}
+
+/* ---------- PPTX 정적 파트 ---------- */
+const CT_XML =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+'<Default Extension="xml" ContentType="application/xml"/>' +
+'<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>' +
+'<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>' +
+'<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>' +
+'<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>' +
+'<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>' +
+'<Override PartName="/ppt/tableStyles.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.tableStyles+xml"/>' +
+'<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>' +
+'<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>' +
+'</Types>';
+
+const ROOT_RELS =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>' +
+'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>' +
+'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>' +
+'</Relationships>';
+
+const PRES_XML =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" saveSubsetFonts="1">' +
+'<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>' +
+'<p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst>' +
+'<p:sldSz cx="12192000" cy="6858000"/><p:notesSz cx="6858000" cy="9144000"/>' +
+'</p:presentation>';
+
+const PRES_RELS =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>' +
+'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>' +
+'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>' +
+'<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/tableStyles" Target="tableStyles.xml"/>' +
+'</Relationships>';
+
+const TABLE_STYLES =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+'def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"/>';
+
+function themeXml(F) {
+  const dk = (n,c) => '<a:' + n + '><a:srgbClr val="' + c + '"/></a:' + n + '>';
+  const fillLst =
+    '<a:fillStyleLst>' +
+    '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>' +
+    '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>' +
+    '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>' +
+    '</a:fillStyleLst>';
+  const lnLst =
+    '<a:lnStyleLst>' +
+    '<a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>' +
+    '<a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>' +
+    '<a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>' +
+    '</a:lnStyleLst>';
+  const efLst =
+    '<a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle>' +
+    '<a:effectStyle><a:effectLst/></a:effectStyle>' +
+    '<a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst>';
+  const bgLst =
+    '<a:bgFillStyleLst>' +
+    '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>' +
+    '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>' +
+    '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>' +
+    '</a:bgFillStyleLst>';
+
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="M&amp;A Report">' +
+  '<a:themeElements><a:clrScheme name="M&amp;A">' +
+  '<a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>' +
+  '<a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>' +
+  dk("dk2","44546A") + dk("lt2", TINT) +
+  dk("accent1",ACCENT) + dk("accent2","ED7D31") + dk("accent3","A5A5A5") +
+  dk("accent4","FFC000") + dk("accent5","5B9BD5") + dk("accent6","70AD47") +
+  dk("hlink","0563C1") + dk("folHlink","954F72") +
+  '</a:clrScheme>' +
+  '<a:fontScheme name="M&amp;A">' +
+  '<a:majorFont><a:latin typeface="' + X(F.eb) + '"/><a:ea typeface="' + X(F.eb) + '"/><a:cs typeface=""/></a:majorFont>' +
+  '<a:minorFont><a:latin typeface="' + X(F.m)  + '"/><a:ea typeface="' + X(F.m)  + '"/><a:cs typeface=""/></a:minorFont>' +
+  '</a:fontScheme>' +
+  '<a:fmtScheme name="M&amp;A">' + fillLst + lnLst + efLst + bgLst + '</a:fmtScheme>' +
+  '</a:themeElements><a:objectDefaults/><a:extraClrSchemeLst/></a:theme>';
+}
+
+const MASTER_XML =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">' +
+'<p:cSld><p:bg><p:bgPr><a:solidFill><a:schemeClr val="bg1"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>' +
+'<p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>' +
+'<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>' +
+'<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>' +
+'</p:spTree></p:cSld>' +
+'<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" ' +
+'accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>' +
+'<p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>' +
+'<p:txStyles><p:titleStyle/><p:bodyStyle/><p:otherStyle/></p:txStyles>' +
+'</p:sldMaster>';
+
+const MASTER_RELS =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>' +
+'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>' +
+'</Relationships>';
+
+const LAYOUT_XML =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="blank" preserve="1">' +
+'<p:cSld name="Blank"><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>' +
+'<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>' +
+'<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>' +
+'</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>';
+
+const LAYOUT_RELS =
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>' +
+'</Relationships>';
+
+function slideRels() {
+  const links = _links.map((u, i) =>
+    '<Relationship Id="rIdL' + (i+1) + '" ' +
+    'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" ' +
+    'Target="' + X(u) + '" TargetMode="External"/>').join("");
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>' +
+    links + '</Relationships>';
+}
+
+/* =====================================================================
+   3. 세로 흐름 계산 — 미리보기와 PPTX가 정확히 같은 배치를 쓰도록
+      한 곳에서만 계산한다.
+   ===================================================================== */
+const pairs = txt => String(txt == null ? "" : txt).split("\n")
+  .map(s => s.trim()).filter(Boolean)
+  .map(s => { const i = s.indexOf("|"); return i < 0 ? [s, ""] : [s.slice(0,i).trim(), s.slice(i+1).trim()]; });
+
+function place(rowsL1, rowsR1, rowsL2, bullets) {
+  const yTbl = L.rowTop + L.gapSec;
+
+  const h1 = rowsL1.length ? tableHeight(rowsL1, L.colL.cw) : 0;
+  const h3 = rowsR1.length ? tableHeight(rowsR1, L.colR.cw) : 0;
+
+  const secL2y = yTbl + h1 + L.gapBlk;
+  const secR2y = yTbl + h3 + L.gapBlk;
+  const tblL2y = secL2y + L.gapSec;
+  const boxR2y = secR2y + L.gapSec;
+
+  const h2 = rowsL2.length ? tableHeight(rowsL2, L.colL.cw) : 0;
+  const h4 = bullets.length ? bulletsHeight(bullets, L.colR.w) : 0;
+
+  const bottomL = rowsL2.length ? tblL2y + h2 : yTbl + h1;
+  const bottomR = bullets.length ? boxR2y + h4 : yTbl + h3;
+  const limit   = L.notesY - 0.12;
+
+  return {
+    yTbl, secL2y, secR2y, tblL2y, boxR2y, h1, h2, h3, h4, limit,
+    fits: bottomL <= limit && bottomR <= limit,
+    overL: Math.max(0, bottomL - limit),
+    overR: Math.max(0, bottomR - limit)
+  };
+}
+
+function layout(d) {
+  const rowsL1  = pairs(d.profile);
+  const rowsR1  = pairs(d.capabilities);
+  const rowsL2  = pairs(d.deal);
+  const bullets = String(d.insights || "").split("\n").map(s => s.trim()).filter(Boolean);
+
+  // 12pt 로 안 들어가면 11pt, 10pt 로 낮춘다 (원본 덱 기본값은 12pt)
+  let plan = null;
+  for (const pt of [12, 11, 10]) {
+    TBL_PT = pt;
+    plan = place(rowsL1, rowsR1, rowsL2, bullets);
+    if (plan.fits) break;
+  }
+  plan.pt = TBL_PT;
+  plan.rowsL1 = rowsL1; plan.rowsR1 = rowsR1; plan.rowsL2 = rowsL2; plan.bullets = bullets;
+  return plan;
+}
+
+/* =====================================================================
+   4. 슬라이드 XML 생성
+   ===================================================================== */
+const joinPair = (a, b) => [a, b].filter(s => String(s||"").trim()).join(" – ");
+
+function buildSlideXml(d, F, P) {
+  _id = 100; _links = [];
+  TBL_PT = P.pt;
+  const S = [];
+
+  // 상단 바 + 머리말
+  S.push(spRect(L.bar, ACCENT, false));
+  S.push(spText(L.hdrL, [runXml(d.headerLeft || "", {sz:1000, color:"FFFFFF", font:F.m})],
+        {anchor:"ctr", wrap:false}));
+  S.push(spText(L.hdrR, [runXml(d.headerRight || d.acquirer || "", {sz:1000, color:"FFFFFF", font:F.m})],
+        {anchor:"ctr", wrap:false}));
+
+  // 페이지 도트 — 원본은 8개 모두 액센트로 채움
+  for (let i = 0; i < L.dots.n; i++) {
+    S.push(spRect({x: L.dots.x + i*L.dots.step, y: L.dots.y, w: L.dots.w, h: L.dots.h}, ACCENT, true));
+  }
+
+  // 말머리 + 부제
+  S.push(spText(L.ttl,  [runXml("인수 사례 분석", {sz:2400, font:F.eb})], {wrap:false}));
+  S.push(spText(L.sub2, [runXml(joinPair(d.acquirer, d.target), {sz:1800, font:F.b})],
+        {anchor:"b", wrap:false}));
+
+  // 우상단 보조 설명
+  if (String(d.aside || "").trim()) {
+    S.push(spText(L.aside,
+      String(d.aside).split("\n").map(t => runXml(t, {sz:1000, color:ACCENT, font:F.sb})),
+      {align:"r"}));
+  }
+
+  // 헤드라인 / 서브헤드라인
+  S.push(spText(L.head,  [runsFor(d.headlineKo || "", {sz:2400, font:F.eb}, F)]));
+  S.push(spText(L.shead, [runsFor(d.subheadKo  || "", {sz:1800, color:ACCENT, font:F.b}, F)]));
+
+  // 섹션 라벨 — ▶ 만 액센트
+  const secLabel = t =>
+    runXml("▶ ", {sz:1400, color:ACCENT, font:F.eb}) + runXml(t, {sz:1400, font:F.eb});
+  const sec = (x, y, t) => spText({x:x, y:y, w:6.0, h:L.secH}, [secLabel(t)], {wrap:false});
+
+  if (P.rowsL1.length) {
+    S.push(sec(L.colL.x, L.rowTop, d.secL1 || "Overview"));
+    S.push(tblFrame({x:L.colL.x, y:P.yTbl, w:L.colL.w}, L.colL.cw, P.rowsL1, F));
+  }
+  if (P.rowsR1.length) {
+    S.push(sec(L.colR.x, L.rowTop, d.secR1 || "Strategic Rationale"));
+    S.push(tblFrame({x:L.colR.x, y:P.yTbl, w:L.colR.w}, L.colR.cw, P.rowsR1, F));
+  }
+  if (P.rowsL2.length) {
+    S.push(sec(L.colL.x, P.secL2y, d.secL2 || "Deal Snapshot"));
+    S.push(tblFrame({x:L.colL.x, y:P.tblL2y, w:L.colL.w}, L.colL.cw, P.rowsL2, F));
+  }
+  if (P.bullets.length) {
+    S.push(sec(L.colR.x, P.secR2y, d.secR2 || "Key Insight"));
+    const box = {x:L.colR.x, y:P.boxR2y, w:L.colR.w, h:P.h4};
+    S.push(spRectGrad(box, TINT));
+    const paras = P.bullets.map(t =>
+      '<a:pPr marL="171450" indent="-171450"><a:buClr><a:srgbClr val="' + ACCENT + '"/></a:buClr>' +
+      '<a:buFont typeface="Arial"/><a:buChar char="•"/></a:pPr>' +
+      runsFor(t, {sz: P.pt*100, font:F.sb}, F));
+    S.push(spText({x:box.x+0.18, y:box.y+0.12, w:box.w-0.36, h:box.h-0.24}, paras));
+  }
+
+  // 하단 출처
+  const src = (d.sources || []).filter(s => s && (s.url || s.title));
+  if (src.length) {
+    S.push(spRect({x:L.notesX, y:L.notesY - 0.09, w:L.notesW, h:0.010}, "D9D9D9", false));
+    const runs = [runXml("※ 출처  ", {sz:1000, color:ACCENT, font:F.sb})];
+    src.forEach((s, i) => {
+      if (i) runs.push(runXml("   ", {sz:1000, color:"595959", font:F.l}));
+      runs.push(runXml("[" + (i+1) + "] ", {sz:1000, color:ACCENT, font:F.b}));
+      const label = [s.publisher, s.title, s.date ? "(" + s.date + ")" : ""].filter(Boolean).join(", ");
+      runs.push(runXml(label || s.url, {sz:1000, color:"595959", font:F.l,
+        link: s.url ? linkId(s.url) : null}));
+    });
+    S.push(spText({x:L.notesX, y:L.notesY, w:L.notesW, h:L.notesH}, [runs.join("")]));
+  }
+
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+    'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">' +
+    '<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>' +
+    '<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>' +
+    '<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>' +
+    S.join("") +
+    '</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>';
+}
+
+function buildPptx(d) {
+  const F = FONTS[FONT] || FONTS.presentation;
+  const P = layout(d);
+  const enc = new TextEncoder();
+  const now = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+
+  const slideXml = buildSlideXml(d, F, P);   // _links 를 채운다 → slideRels() 는 반드시 이 다음
+
+  const core = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" ' +
+    'xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" ' +
+    'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
+    '<dc:title>' + X("인수 사례 분석 " + joinPair(d.acquirer, d.target)) + '</dc:title>' +
+    '<dc:description>' + X((d.sources||[]).map((s,i)=>"["+(i+1)+"] "+(s.url||"")).join("  ")) + '</dc:description>' +
+    '<dcterms:created xsi:type="dcterms:W3CDTF">' + now + '</dcterms:created>' +
+    '<dcterms:modified xsi:type="dcterms:W3CDTF">' + now + '</dcterms:modified>' +
+    '</cp:coreProperties>';
+
+  const app = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" ' +
+    'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">' +
+    '<Application>Microsoft Office PowerPoint</Application><Slides>1</Slides>' +
+    '</Properties>';
+
+  const files = [
+    {name:"[Content_Types].xml",                          data: enc.encode(CT_XML)},
+    {name:"_rels/.rels",                                  data: enc.encode(ROOT_RELS)},
+    {name:"docProps/core.xml",                            data: enc.encode(core)},
+    {name:"docProps/app.xml",                             data: enc.encode(app)},
+    {name:"ppt/presentation.xml",                         data: enc.encode(PRES_XML)},
+    {name:"ppt/_rels/presentation.xml.rels",              data: enc.encode(PRES_RELS)},
+    {name:"ppt/tableStyles.xml",                          data: enc.encode(TABLE_STYLES)},
+    {name:"ppt/theme/theme1.xml",                         data: enc.encode(themeXml(F))},
+    {name:"ppt/slideMasters/slideMaster1.xml",            data: enc.encode(MASTER_XML)},
+    {name:"ppt/slideMasters/_rels/slideMaster1.xml.rels", data: enc.encode(MASTER_RELS)},
+    {name:"ppt/slideLayouts/slideLayout1.xml",            data: enc.encode(LAYOUT_XML)},
+    {name:"ppt/slideLayouts/_rels/slideLayout1.xml.rels", data: enc.encode(LAYOUT_RELS)},
+    {name:"ppt/slides/slide1.xml",                        data: enc.encode(slideXml)},
+    {name:"ppt/slides/_rels/slide1.xml.rels",             data: enc.encode(slideRels())}
+  ];
+  return makeZip(files);
+}
+
+/* =====================================================================
+   5. HTML 미리보기 — PPTX와 동일 좌표계
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const pos = g => "left:" + (g.x*PX) + "px;top:" + (g.y*PX) + "px;width:" + (g.w*PX) + "px;" +
+                 (g.h != null ? "height:" + (g.h*PX) + "px;" : "");
+
+const fn = t => X(String(t == null ? "" : t))
+  .replace(/\[(\d+(?:,\s*\d+)*)\]/g, '<sup>[$1]</sup>')
+  .replace(/\n/g, "<br>");
+
+function renderPreview(d, P) {
+  const H = [];
+  const ptCss = "font-size:" + P.pt + "pt;";
+  TBL_PT = P.pt;
+
+  H.push('<div class="abs bar" style="' + pos(L.bar) + '"></div>');
+  H.push('<div class="abs hdr" style="' + pos(L.hdrL) + '">' + X(d.headerLeft || "") + '</div>');
+  H.push('<div class="abs hdr" style="' + pos(L.hdrR) + '">' + X(d.headerRight || d.acquirer || "") + '</div>');
+
+  for (let i = 0; i < L.dots.n; i++) {
+    H.push('<div class="abs dot" style="' +
+      pos({x:L.dots.x + i*L.dots.step, y:L.dots.y, w:L.dots.w, h:L.dots.h}) + '"></div>');
+  }
+
+  H.push('<div class="abs ttl"  style="' + pos(L.ttl)  + '">인수 사례 분석</div>');
+  H.push('<div class="abs sub2" style="' + pos(L.sub2) + '">' + X(joinPair(d.acquirer, d.target)) + '</div>');
+  if (String(d.aside||"").trim())
+    H.push('<div class="abs aside" style="' + pos(L.aside) + '">' + fn(d.aside) + '</div>');
+  H.push('<div class="abs head"  style="' + pos(L.head)  + '">' + fn(d.headlineKo) + '</div>');
+  H.push('<div class="abs shead" style="' + pos(L.shead) + '">' + fn(d.subheadKo) + '</div>');
+
+  const sec = (x, y, t) => '<div class="abs sec" style="' +
+    pos({x:x, y:y, w:6.0, h:L.secH}) + '"><i>▶</i>' + X(t) + '</div>';
+
+  const tbl = (x, y, w, cw, rows) => {
+    if (!rows.length) return "";
+    return '<div class="abs" style="' + pos({x:x, y:y, w:w}) + '"><table>' +
+      '<colgroup><col style="width:' + (cw[0]/w*100) + '%"><col></colgroup>' +
+      rows.map(r =>
+        '<tr style="height:' + (rowHeight(r, cw)*PX) + 'px">' +
+        '<td class="k" style="' + ptCss + '">' + fn(r[0]) + '</td>' +
+        '<td class="v" style="' + ptCss + '">' + fn(r[1]) + '</td></tr>').join("") +
+      '</table></div>';
+  };
+
+  if (P.rowsL1.length) {
+    H.push(sec(L.colL.x, L.rowTop, d.secL1 || "Overview"));
+    H.push(tbl(L.colL.x, P.yTbl, L.colL.w, L.colL.cw, P.rowsL1));
+  }
+  if (P.rowsR1.length) {
+    H.push(sec(L.colR.x, L.rowTop, d.secR1 || "Strategic Rationale"));
+    H.push(tbl(L.colR.x, P.yTbl, L.colR.w, L.colR.cw, P.rowsR1));
+  }
+  if (P.rowsL2.length) {
+    H.push(sec(L.colL.x, P.secL2y, d.secL2 || "Deal Snapshot"));
+    H.push(tbl(L.colL.x, P.tblL2y, L.colL.w, L.colL.cw, P.rowsL2));
+  }
+  if (P.bullets.length) {
+    H.push(sec(L.colR.x, P.secR2y, d.secR2 || "Key Insight"));
+    H.push('<div class="abs box" style="' + pos({x:L.colR.x, y:P.boxR2y, w:L.colR.w, h:P.h4}) +
+      'background:linear-gradient(to top,#FBFBFB 0%,#' + TINT + ' 85%,#' + TINT + ' 100%)"><ul>' +
+      P.bullets.map(t => '<li style="' + ptCss + '">' + fn(t) + '</li>').join("") + '</ul></div>');
+  }
+
+  const src = (d.sources || []).filter(s => s && (s.url || s.title));
+  if (src.length) {
+    H.push('<div class="abs rule" style="' +
+      pos({x:L.notesX, y:L.notesY - 0.09, w:L.notesW, h:0.010}) + '"></div>');
+    H.push('<div class="abs notes" style="' + pos({x:L.notesX, y:L.notesY, w:L.notesW, h:L.notesH}) + '">' +
+      '<span class="lbl">※ 출처</span>&nbsp; ' +
+      src.map((s,i) => '<span class="no">[' + (i+1) + ']</span> ' +
+        X([s.publisher, s.title, s.date ? "(" + s.date + ")" : ""].filter(Boolean).join(", ") || s.url)
+      ).join(" &nbsp;&nbsp; ") + '</div>');
+  }
+
+  $("slide").innerHTML = H.join("");
+}
+
+/* =====================================================================
+   6. 기사 링크 — 매체·날짜 자동 추정
+   ===================================================================== */
+const MEDIA = {
+  "adage.com":"Ad Age", "campaignlive.com":"Campaign", "campaignlive.co.uk":"Campaign",
+  "campaignasia.com":"Campaign Asia", "thedrum.com":"The Drum", "marketingdive.com":"Marketing Dive",
+  "adexchanger.com":"AdExchanger", "digiday.com":"Digiday", "mediapost.com":"MediaPost",
+  "adweek.com":"Adweek", "prweek.com":"PRWeek", "marketingweek.com":"Marketing Week",
+  "reuters.com":"Reuters", "bloomberg.com":"Bloomberg", "ft.com":"Financial Times",
+  "wsj.com":"WSJ", "cnbc.com":"CNBC", "businessinsider.com":"Business Insider",
+  "techcrunch.com":"TechCrunch", "axios.com":"Axios", "nytimes.com":"NYT",
+  "theguardian.com":"The Guardian", "forbes.com":"Forbes", "fortune.com":"Fortune",
+  "prnewswire.com":"PR Newswire", "businesswire.com":"Business Wire",
+  "globenewswire.com":"GlobeNewswire", "mumbrella.com.au":"Mumbrella",
+  "adnews.com.au":"AdNews", "marketing-interactive.com":"Marketing-Interactive",
+  "mk.co.kr":"매일경제", "hankyung.com":"한국경제", "sedaily.com":"서울경제",
+  "thebell.co.kr":"더벨", "chosun.com":"조선비즈", "mt.co.kr":"머니투데이",
+  "yna.co.kr":"연합뉴스", "etnews.com":"전자신문", "zdnet.co.kr":"ZDNet Korea",
+  "the-pr.co.kr":"더피알", "brandbrief.co.kr":"브랜드브리프", "mediatoday.co.kr":"미디어오늘",
+  "hankookilbo.com":"한국일보", "donga.com":"동아일보", "khan.co.kr":"경향신문"
+};
+
+function guessMedia(url) {
+  let host;
+  try { host = new URL(url).hostname.replace(/^www\./, "").toLowerCase(); }
+  catch (e) { return ""; }
+  if (MEDIA[host]) return MEDIA[host];
+  for (const k in MEDIA) if (host === k || host.endsWith("." + k)) return MEDIA[k];
+  const base = host.replace(/\.(com|co\.kr|kr|net|org|co\.uk|com\.au|io|news)$/, "").split(".").pop();
+  return base ? base.charAt(0).toUpperCase() + base.slice(1) : "";
+}
+
+/** URL 경로의 2026/08/20, 2026-08-20, 20260820 을 '26.08.20 으로 */
+function guessDate(url) {
+  const m = String(url).match(/(20\d{2})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/)
+         || String(url).match(/(20\d{2})(\d{2})(\d{2})/);
+  if (!m) return "";
+  const mm = String(m[2]).padStart(2, "0"), dd = String(m[3]).padStart(2, "0");
+  if (+mm < 1 || +mm > 12 || +dd < 1 || +dd > 31) return "";
+  return "'" + m[1].slice(2) + "." + mm + "." + dd;
+}
+
+/* =====================================================================
+   7. 상태 · UI 배선
+   ===================================================================== */
+const KEY = "ma-onepager-v2";
+const FIELDS = ["headerLeft","headerRight","acquirer","target","aside","headlineKo","subheadKo",
+                "secL1","profile","secR1","capabilities","secL2","deal","secR2","insights",
+                "unknowns","fname"];
+
+const DEFAULTS = {
+  accent:"E27041", tint:"E7E6E6", font:"presentation",
+  headerLeft:"'26년 하반기 인수 사례 분석", headerRight:"", acquirer:"", target:"", aside:"",
+  headlineKo:"", subheadKo:"",
+  secL1:"Overview",            profile:"",
+  secR1:"Strategic Rationale", capabilities:"",
+  secL2:"Deal Snapshot",       deal:"",
+  secR2:"Implication",         insights:"",
+  unknowns:"", fname:"",
+  sources:[{url:"",title:"",publisher:"",date:""},
+           {url:"",title:"",publisher:"",date:""},
+           {url:"",title:"",publisher:"",date:""}]
+};
+
+function blank() { return JSON.parse(JSON.stringify(DEFAULTS)); }
+
+let state = (function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (s && typeof s === "object") {
+      const merged = Object.assign(blank(), s);
+      if (!Array.isArray(merged.sources) || !merged.sources.length)
+        merged.sources = [{url:"",title:"",publisher:"",date:""}];
+      return merged;
+    }
+  } catch (e) {}
+  return blank();
+})();
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+/* ---------- 기사 카드 ---------- */
+function renderArts() {
+  const box = $("arts");
+  box.innerHTML = state.sources.map((s, i) =>
+    '<div class="art" data-i="' + i + '">' +
+      (state.sources.length > 1 ? '<button class="x" data-del="' + i + '" title="삭제">&times;</button>'
+                                : '<span class="n">1</span>') +
+      '<label>기사 ' + (i+1) + ' — URL</label>' +
+      '<input type="text" data-f="url" value="' + X(s.url||"") + '" placeholder="https://...">' +
+      '<label>제목</label>' +
+      '<input type="text" data-f="title" value="' + X(s.title||"") + '">' +
+      '<div class="g2" style="margin-top:8px">' +
+        '<div><label>매체</label><input type="text" data-f="publisher" value="' + X(s.publisher||"") + '"></div>' +
+        '<div><label>게재일</label><input type="text" data-f="date" value="' + X(s.date||"") + '" placeholder="&#39;26.08.20"></div>' +
+      '</div>' +
+    '</div>').join("");
+
+  box.querySelectorAll(".art input").forEach(inp => {
+    inp.oninput = () => {
+      const card = inp.closest(".art");
+      const i = +card.dataset.i;
+      state.sources[i][inp.dataset.f] = inp.value;
+      if (inp.dataset.f === "url") {
+        const pub = card.querySelector('[data-f="publisher"]');
+        const dat = card.querySelector('[data-f="date"]');
+        if (!pub.value) { const g = guessMedia(inp.value); if (g) { pub.value = g; state.sources[i].publisher = g; } }
+        if (!dat.value) { const g = guessDate(inp.value);  if (g) { dat.value = g; state.sources[i].date = g; } }
+      }
+      touch();
+    };
+  });
+  box.querySelectorAll("[data-del]").forEach(b => {
+    b.onclick = () => {
+      state.sources.splice(+b.dataset.del, 1);
+      if (!state.sources.length) state.sources.push({url:"",title:"",publisher:"",date:""});
+      renderArts(); touch();
+    };
+  });
+}
+
+/* ---------- 팔레트 ---------- */
+function renderSwatches() {
+  $("sw").innerHTML = PALETTE.map(p =>
+    '<button data-a="' + p.accent + '" data-t="' + p.tint + '"' +
+    (p.accent === state.accent ? ' class="on"' : '') +
+    '><i style="background:#' + p.accent + '"></i>' + p.name + '</button>').join("");
+  $("sw").querySelectorAll("button").forEach(b => {
+    b.onclick = () => {
+      state.accent = b.dataset.a; state.tint = b.dataset.t;
+      $("accent").value = state.accent; $("tint").value = state.tint;
+      renderSwatches(); touch();
+    };
+  });
+}
+
+/* ---------- 폼 <-> 상태 ---------- */
+const clean6 = v => {
+  const h = String(v).replace(/[^0-9A-Fa-f]/g, "").toUpperCase().slice(0, 6);
+  return h.length === 6 ? h : "";
+};
+
+function fillForm() {
+  FIELDS.forEach(f => { if ($(f)) $(f).value = state[f] == null ? "" : state[f]; });
+  $("accent").value = state.accent;
+  $("tint").value   = state.tint;
+  $("font").value   = state.font;
+  renderSwatches();
+  renderArts();
+}
+
+function bindForm() {
+  FIELDS.forEach(f => { if ($(f)) $(f).oninput = () => { state[f] = $(f).value; touch(); }; });
+  $("accent").oninput = () => { state.accent = clean6($("accent").value) || state.accent; renderSwatches(); touch(); };
+  $("tint").oninput   = () => { state.tint   = clean6($("tint").value)   || state.tint;   touch(); };
+  $("font").onchange  = () => { state.font   = $("font").value; touch(); };
+}
+
+/* ---------- 렌더 ---------- */
+let tmr = null;
+function touch() { save(); clearTimeout(tmr); tmr = setTimeout(render, 90); }
+
+function render() {
+  ACCENT = state.accent || "E27041";
+  TINT   = state.tint   || "E7E6E6";
+  FONT   = state.font   || "presentation";
+
+  document.documentElement.style.setProperty("--accent", "#" + ACCENT);
+  document.documentElement.style.setProperty("--tint",   "#" + TINT);
+
+  const P = layout(state);
+  renderPreview(state, P);
+  report(P);
+}
+
+function report(P) {
+  const warn = [];
+  if (P.overL > 0.01) warn.push("왼쪽 열이 " + P.overL.toFixed(2) + "in 넘칩니다 — 항목 수나 글자 수를 줄이세요.");
+  if (P.overR > 0.01) warn.push("오른쪽 열이 " + P.overR.toFixed(2) + "in 넘칩니다 — 항목 수나 글자 수를 줄이세요.");
+
+  const src = (state.sources||[]).filter(s => s && String(s.url||"").trim());
+  const noTitle = src.filter(s => !String(s.title||"").trim()).length;
+
+  const st = $("status");
+  if (warn.length)         { st.textContent = "레이아웃 넘침";                 st.className = "status bad"; }
+  else if (P.pt < 12)      { st.textContent = "본문 " + P.pt + "pt 로 축소해 맞춤"; st.className = "status bad"; }
+  else                     { st.textContent = "정상 · 본문 12pt";              st.className = "status good"; }
+
+  const parts = [];
+  if (src.length) {
+    parts.push('<h3>출처 ' + src.length + '건</h3><ol>' + src.map(s =>
+      '<li>' + X([s.publisher, s.date].filter(Boolean).join(" · ")) + ' — ' +
+      X(s.title || "(제목 미입력)") +
+      '<br><a href="' + X(s.url) + '" target="_blank" rel="noreferrer">' + X(s.url) + '</a></li>'
+    ).join("") + '</ol>');
+  }
+  if (src.length && src.length < 3)
+    parts.push('<p class="bad">기사가 ' + src.length + '건입니다 — 3~5건을 권장합니다.</p>');
+  if (noTitle)
+    parts.push('<p class="bad">제목이 비어 있는 기사 ' + noTitle + '건 — 출처 줄에 URL이 그대로 나갑니다.</p>');
+  if (String(state.unknowns||"").trim())
+    parts.push('<p style="color:#6b7280">확인되지 않은 항목: ' + X(state.unknowns) + '</p>');
+  if (warn.length)
+    parts.push('<div class="warnbox"><p class="bad">⚠ 레이아웃 경고<br>' + warn.map(X).join("<br>") + '</p></div>');
+
+  const m = $("msg");
+  m.innerHTML = parts.join("");
+  m.style.display = parts.length ? "block" : "none";
+}
+
+/* ---------- 링크 일괄 입력 ---------- */
+const norm = u => String(u||"").trim().replace(/[#?].*$/, "").replace(/\/+$/, "").toLowerCase();
+
+$("bulkAdd").onclick = () => {
+  const urls = $("bulk").value.split(/[\s,]+/).map(s => s.trim())
+    .filter(s => /^https?:\/\//i.test(s));
+  if (!urls.length) { alert("http(s):// 로 시작하는 링크를 찾지 못했습니다."); return; }
+
+  const kept = state.sources.filter(s => (s.url || s.title || s.publisher || "").trim());
+  const have = new Set(kept.map(s => norm(s.url)).filter(Boolean));
+
+  urls.forEach(u => {
+    if (have.has(norm(u))) return;
+    have.add(norm(u));
+    kept.push({url:u, title:"", publisher:guessMedia(u), date:guessDate(u)});
+  });
+
+  state.sources = kept.slice(0, 8);
+  if (!state.sources.length) state.sources = [{url:"",title:"",publisher:"",date:""}];
+  $("bulk").value = "";
+  renderArts(); touch();
+};
+
+$("bulkClear").onclick = () => { $("bulk").value = ""; };
+$("addArt").onclick = () => {
+  if (state.sources.length >= 8) return;
+  state.sources.push({url:"",title:"",publisher:"",date:""});
+  renderArts(); touch();
+};
+
+/* ---------- 검색 도우미 ---------- */
+const query = () => [state.acquirer, state.target].filter(s => String(s||"").trim())
+  .map(s => '"' + s.trim() + '"').join(" ") || "M&A acquisition";
+$("gNews").onclick = () => window.open(
+  "https://news.google.com/search?q=" + encodeURIComponent(query() + " acquisition") +
+  "&hl=ko&gl=KR&ceid=KR:ko", "_blank", "noreferrer");
+$("gWeb").onclick = () => window.open(
+  "https://www.google.com/search?tbm=nws&q=" + encodeURIComponent(query() + " acquisition"),
+  "_blank", "noreferrer");
+
+/* ---------- 저장 · 불러오기 ---------- */
+function download(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+const safeName = s => String(s||"").replace(/[\\/:*?"<>|]/g, "_").trim().slice(0, 70) || "slide";
+
+$("expJson").onclick = () => download(
+  new Blob([JSON.stringify(state, null, 2)], {type:"application/json"}),
+  "M&A_원페이저_" + safeName(joinPair(state.acquirer, state.target)) + ".json");
+
+$("impJson").onclick = () => $("fileJson").click();
+$("fileJson").onchange = e => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      state = Object.assign(blank(), JSON.parse(r.result));
+      if (!Array.isArray(state.sources) || !state.sources.length)
+        state.sources = [{url:"",title:"",publisher:"",date:""}];
+      fillForm(); touch();
+    } catch (err) { alert("JSON 을 읽지 못했습니다: " + err.message); }
+  };
+  r.readAsText(f);
+  e.target.value = "";
+};
+
+$("reset").onclick = () => {
+  if (!confirm("입력한 내용을 모두 지웁니다. 계속할까요?")) return;
+  state = blank();
+  fillForm(); touch();
+};
+
+$("sample").onclick = () => {
+  state = Object.assign(blank(), {
+    accent:"E27041", tint:"E7E6E6",
+    headerLeft:"'26년 상반기 인수 사례 분석", headerRight:"Omnicom",
+    acquirer:"Omnicom", target:"CX Lavender",
+    aside:"'24.12月 IPG 합병 발표 이후 첫 번째 볼트온 인수",
+    headlineKo:"호주 CX 에이전시 'CX Lavender' 인수로 오세아니아 고객 경험 실행 역량 확보 [1]",
+    subheadKo:"미디어·크리에이티브 중심 조직에 End-to-End 고객 트랜스포메이션 및 로열티 운영 기능 결합 [2]",
+    secL1:"Overview",
+    profile:"소재지 | 호주 시드니 [1]\n설립 / 인원 | 1997년 설립, 임직원 20명 [1]\n리더십 | Ryan Stubna (CCO), KaLing Ng (Client Services Director) [2]\n주요 서비스 | CX 전략, 로열티 프로그램, 디지털 플랫폼 [1]\n주요 광고주 | Westpac(호주 상업은행), Audi [1]",
+    secR1:"Strategic Rationale",
+    capabilities:"시장 배경 | 호주 CX·로열티 투자 확대, 미디어 수수료는 압박 [2]\n역량 갭 | 미디어·크리에이티브 편중, CX 실행 조직 부재 [2]\n포트폴리오 | '22년 美 TA Digital에 이은 두 번째 CX 자산 [3]\n경쟁 대응 | Accenture Song·Publicis Sapient 공세에 방어 [3]\n수익 구조 | 프로젝트 매출을 리테이너 로열티 운영으로 전환 [2]",
+    secL2:"Deal Snapshot",
+    deal:"발표 시점 | '26.6月 [1]\n거래 구조 | 지분 100% 인수, Omnicom Oceania 편입 [1]\n인수 대가 | 미공개 [1]\n리더십 승계 | 창업 CEO 퇴사, 실무 리더 2인 잔류 [2]",
+    secR2:"Implication",
+    insights:"홀딩스의 인수 초점이 미디어 규모 확장에서 CX·데이터 실행 역량 확보로 이동, 소형 볼트온 딜 빈도 증가 [2,3]\n20명 부티크도 핵심 광고주 1곳이면 인수 가치가 성립 [1]\n아·태 CX 전문사는 아직 밸류에이션 여력이 있어 선제 확보가 유효 [3]\n인수 후 리더십 잔류 여부가 광고주 이관 성패의 최대 변수 [2]",
+    unknowns:"인수 대가 / 매출 규모 / 어닝아웃 조건",
+    sources:[
+      {url:"https://www.adage.com/", title:"Omnicom acquires CX agency CX Lavender", publisher:"Ad Age", date:"'26.06.11"},
+      {url:"https://www.campaignlive.com/", title:"CX Lavender joins Omnicom Oceania", publisher:"Campaign", date:"'26.06.12"},
+      {url:"https://www.mumbrella.com.au/", title:"What the deal means for the local market", publisher:"Mumbrella", date:"'26.06.13"}
+    ]
+  });
+  fillForm(); touch();
+};
+
+/* ---------- PPTX ---------- */
+$("dl").onclick = () => {
+  try {
+    const name = String(state.fname||"").trim() ||
+      ("M&A_인수사례_" + safeName(joinPair(state.acquirer, state.target)));
+    download(buildPptx(state), name.replace(/\.pptx$/i, "") + ".pptx");
+  } catch (e) {
+    alert("PPTX 생성 실패: " + e.message);
+    throw e;
+  }
+};
+
+/* ---------- 배율 / 섹션 접기 ---------- */
+$("zoom").oninput = () => {
+  const z = $("zoom").value / 100;
+  $("slideWrap").style.transform = "scale(" + z + ")";
+  $("slideWrap").style.marginBottom = (600 * (z - 1)) + "px";
+};
+
+document.querySelectorAll(".sec > h2").forEach(h => {
+  h.onclick = () => h.parentElement.classList.toggle("closed");
+});
+document.querySelectorAll(".sec").forEach(s => {
+  if (["q1","q2","q3","q4","out"].indexOf(s.dataset.k) >= 0) s.classList.add("closed");
+});
+
+/* ---------- 시작 ---------- */
+bindForm();
+fillForm();
+render();
+</script>
+</body>
+</html>
