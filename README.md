@@ -2,7 +2,9 @@
 
 M&A 기사 3~5건을 입력하면 **1장짜리 인수 사례 분석 장표(PPTX)** 를 만들어 주는 단일 HTML 도구.
 
-`ma-slide-generator.html` 파일 하나를 브라우저로 열면 끝입니다. 설치·빌드·서버가 필요 없습니다.
+### ▶ 바로 쓰기 — **https://jackkim926.github.io/ma-slide-generator/**
+
+설치 없이 브라우저에서 바로 동작합니다. 오프라인으로 쓰려면 `ma-slide-generator.html` 파일 하나만 내려받아 열면 됩니다. 빌드·서버·계정 모두 필요 없습니다.
 
 ![생성 결과 예시](docs/preview.svg)
 
