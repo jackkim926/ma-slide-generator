@@ -4,6 +4,10 @@ M&A 기사 3~5건을 입력하면 **1장짜리 인수 사례 분석 장표(PPTX)
 
 `ma-slide-generator.html` 파일 하나를 브라우저로 열면 끝입니다. 설치·빌드·서버가 필요 없습니다.
 
+![생성 결과 예시](docs/preview.svg)
+
+<sub>도구가 만드는 장표. 실제 `.pptx` 결과물은 [`docs/sample-output.pptx`](docs/sample-output.pptx) 에서 받아볼 수 있습니다.</sub>
+
 ## 설계 원칙
 
 **API 연동 없음.** 외부 API·계정·키를 일절 쓰지 않습니다. 네트워크 요청(`fetch`)이 한 줄도 없고, 밖으로 나가는 동작은 사용자가 직접 누르는 Google 검색 버튼(새 탭 열기)뿐입니다. 입력값은 브라우저 `localStorage` 에만 저장됩니다.
@@ -62,8 +66,10 @@ M&A 기사 3~5건을 입력하면 **1장짜리 인수 사례 분석 장표(PPTX)
 | 파일 | 설명 |
 |---|---|
 | `ma-slide-generator.html` | 도구 본체 — 이 파일 하나면 동작합니다 |
+| `docs/preview.svg` | 위 미리보기 이미지 (도구의 좌표 계산으로 생성) |
+| `docs/sample-output.pptx` | `예시 채우기` 로 만든 실제 결과물 |
 
-기준 덱 원본, 상세 스타일 스펙, 생성 결과물 등 조직 내부 자료는 `.gitignore` 로 제외돼 있습니다.
+기준 덱 원본과 상세 스타일 스펙 등 조직 내부 자료는 `.gitignore` 로 제외돼 있습니다.
 
 ## 라이선스
 
